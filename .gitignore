@@ -1,6 +1,7 @@
 node_modules/
 dist/
-.openai/
+.openai/*
+!.openai/hosting.json
 AGENTS.md
 .DS_Store
 *.log

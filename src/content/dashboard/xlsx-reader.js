@@ -97,7 +97,7 @@ function cellValue(cell, sharedStrings) {
 }
 
 function parseSheet(xmlText, sharedStrings) {
-  const document = parseXml(xmlText, "消课记录");
+  const document = parseXml(xmlText, "数据工作表");
   const matrix = [];
   for (const row of elements(document, "row")) {
     const values = [];
@@ -120,17 +120,21 @@ export async function readLessonRecords(file) {
 
   const workbook = parseXml(workbookText, "工作簿");
   const relationships = parseXml(relationshipsText, "工作簿关系");
-  const lessonSheet = elements(workbook, "sheet").find((sheet) => sheet.getAttribute("name") === "消课记录");
-  if (!lessonSheet) throw new Error("未找到工作表“消课记录”");
+  const sheets = elements(workbook, "sheet");
+  const lessonSheet = sheets.find((sheet) => sheet.getAttribute("name") === "消课记录")
+    ?? sheets.find((sheet) => sheet.getAttribute("name") === "SheetJS")
+    ?? (sheets.length === 1 ? sheets[0] : null);
+  if (!lessonSheet) throw new Error("未找到课程记录工作表");
+  const sheetName = lessonSheet.getAttribute("name") || "课程记录";
 
   const relationId = lessonSheet.getAttribute("r:id")
     ?? Array.from(lessonSheet.attributes).find((attribute) => attribute.localName === "id")?.value;
   const relation = elements(relationships, "Relationship").find((item) => item.getAttribute("Id") === relationId);
   const target = relation?.getAttribute("Target")?.replace(/^\//u, "");
-  if (!target) throw new Error("无法定位工作表“消课记录”");
+  if (!target) throw new Error(`无法定位工作表“${sheetName}”`);
   const sheetPath = target.startsWith("xl/") ? target : `xl/${target.replace(/^\.\//u, "")}`;
   const sheetText = await archive.readText(sheetPath);
-  if (!sheetText) throw new Error("无法读取工作表“消课记录”");
+  if (!sheetText) throw new Error(`无法读取工作表“${sheetName}”`);
   const sharedStrings = parseSharedStrings(await archive.readText("xl/sharedStrings.xml"));
   return parseSheet(sheetText, sharedStrings);
 }

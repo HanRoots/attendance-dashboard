@@ -342,7 +342,9 @@ export function DashboardContent() {
   const rate = summary.attendanceRate == null
     ? "—"
     : new Intl.NumberFormat("zh-CN", { style: "percent", maximumFractionDigits: 1 }).format(summary.attendanceRate);
-  const sourceRowsByQuery = { teaching_weeks: sourceWeeks, lesson_records: lessons };
+  const sourceRowsByQuery = activeFile?.id === seedFile.id
+    ? { teaching_weeks: sourceWeeks, lesson_records: lessons }
+    : { teaching_weeks: [], lesson_records: [] };
   const annualWeeks = weeks.filter((week) => Number(week.weekStart.slice(0, 4)) === year);
 
   return <article className="attendance-page">

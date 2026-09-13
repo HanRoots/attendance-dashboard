@@ -17,6 +17,11 @@ import {
   WeekDetail,
 } from "./AttendanceCalendar.jsx";
 import { HolidayPanel } from "./HolidayPanel.jsx";
+import {
+  loadAttendanceWorkspace,
+  sanitizeStoredFiles,
+  saveAttendanceWorkspace,
+} from "./attendance-storage.js";
 import { readLessonRecords } from "./xlsx-reader.js";
 import "./attendance.css";
 
@@ -218,6 +223,7 @@ export function DashboardContent() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [holidayPanelOpen, setHolidayPanelOpen] = useState(false);
+  const [workspaceReady, setWorkspaceReady] = useState(false);
   const activeFile = files.find((file) => file.id === activeFileId) ?? files[0];
   const baseDataset = activeFile?.dataset;
   const holidayRanges = activeFile?.holidays ?? [];
@@ -232,6 +238,67 @@ export function DashboardContent() {
   const lessons = dataset?.lessons.filter((lesson) => summary
     && (lesson.studentId === summary.studentId || (!summary.studentId && lesson.studentName === summary.studentName))) ?? [];
   const activeWeek = weeks.find((week) => week.weekStart === selectedWeek) ?? weeks.at(-1);
+
+  useEffect(() => {
+    let cancelled = false;
+    loadAttendanceWorkspace().then((stored) => {
+      if (cancelled) return;
+      const uploadedFiles = sanitizeStoredFiles(stored?.files)
+        .filter((file) => file.id !== seedFile.id);
+      const nextFiles = stored?.referenceVisible === false
+        ? uploadedFiles
+        : [seedFile, ...uploadedFiles];
+      const nextActiveFile = nextFiles.find((file) => file.id === stored?.activeFileId) ?? nextFiles[0];
+      const nextSummaries = nextActiveFile?.dataset?.summaries ?? [];
+      const nextSummary = nextSummaries.find((item) => item.studentKey === stored?.studentKey)
+        ?? nextSummaries[0];
+
+      setFiles(nextFiles);
+      setActiveFileId(nextActiveFile?.id ?? "");
+      setStudentKey(nextSummary?.studentKey ?? "");
+      setMonth(typeof stored?.month === "string"
+        ? stored.month
+        : nextSummary?.lastLessonDate?.slice(0, 7) ?? "2026-09");
+      setYear(Number.isInteger(stored?.year)
+        ? stored.year
+        : Number(nextSummary?.lastWeek?.slice(0, 4) ?? 2026));
+      setCalendarView(stored?.calendarView === "year" ? "year" : "month");
+      setSelectedWeek(typeof stored?.selectedWeek === "string"
+        ? stored.selectedWeek
+        : nextSummary?.lastWeek ?? null);
+      setRecentFilter(["all", "attended", "absent", "holiday"].includes(stored?.recentFilter)
+        ? stored.recentFilter
+        : "all");
+      setWorkspaceReady(true);
+    }).catch(() => {
+      if (cancelled) return;
+      setError("无法恢复此前保存的数据，请重新上传 Excel");
+      setWorkspaceReady(true);
+    });
+    return () => { cancelled = true; };
+  }, [seedFile.id]);
+
+  useEffect(() => {
+    if (!workspaceReady) return undefined;
+    let cancelled = false;
+    const workspace = {
+      version: 1,
+      files: files.filter((file) => file.id !== seedFile.id),
+      referenceVisible: files.some((file) => file.id === seedFile.id),
+      activeFileId,
+      studentKey,
+      month,
+      year,
+      calendarView,
+      selectedWeek,
+      recentFilter,
+    };
+    saveAttendanceWorkspace(workspace).catch(() => {
+      if (!cancelled) setError("数据已载入，但当前浏览器无法保存刷新状态");
+    });
+    return () => { cancelled = true; };
+  }, [workspaceReady, files, activeFileId, studentKey, month, year, calendarView,
+    selectedWeek, recentFilter, seedFile.id]);
 
   useEffect(() => {
     if (!summary) return;

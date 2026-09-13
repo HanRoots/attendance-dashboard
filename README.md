@@ -7,6 +7,7 @@
 [https://hanroots.github.io/attendance-dashboard/](https://hanroots.github.io/attendance-dashboard/)
 
 Excel 数据仅在本地浏览器中解析，不会上传到服务器。
+解析后的文件、当前选择和假期设置会保存在当前浏览器中，刷新页面后仍会保留；清除浏览器网站数据会同时清除这些记录。
 
 ## 功能
 

@@ -25,6 +25,25 @@ import {
 import { readLessonRecords } from "./xlsx-reader.js";
 import "./attendance.css";
 
+function YuexingrenFontStyles() {
+  return <style>{`
+    @font-face {
+      font-family: "MiSans Local";
+      src: url("./fonts/MiSans-Regular.ttf") format("truetype");
+      font-style: normal;
+      font-weight: 400;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: "MiSans Latin Local";
+      src: url("./fonts/MiSansLatin-Regular.ttf") format("truetype");
+      font-style: normal;
+      font-weight: 400;
+      font-display: swap;
+    }
+  `}</style>;
+}
+
 function UploadIcon() {
   return <svg viewBox="0 0 24 24" aria-hidden="true">
     <path d="M12 15V3m0 0L7.5 7.5M12 3l4.5 4.5M5 13v5.5A2.5 2.5 0 0 0 7.5 21h9a2.5 2.5 0 0 0 2.5-2.5V13"
@@ -401,6 +420,7 @@ export function DashboardContent() {
     holidayOpen={holidayPanelOpen} onToggleHolidays={() => setHolidayPanelOpen((open) => !open)} />;
 
   if (!summary) return <article className="attendance-page">
+    <YuexingrenFontStyles />
     {header}
     {error && <div className="upload-error" role="alert"><strong>部分文件无法读取</strong><span>{error}</span></div>}
     <div className="attendance-empty">暂无文件，请上传标准 Excel 表格</div>
@@ -415,6 +435,7 @@ export function DashboardContent() {
   const annualWeeks = weeks.filter((week) => Number(week.weekStart.slice(0, 4)) === year);
 
   return <article className="attendance-page">
+    <YuexingrenFontStyles />
     {header}
 
     {holidayPanelOpen && activeFile && <HolidayPanel fileName={activeFile.name} ranges={holidayRanges}
